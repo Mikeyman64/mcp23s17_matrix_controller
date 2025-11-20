@@ -1,7 +1,65 @@
 # MCP23S17 Hardware Wiring Guide
 
 ## Overview
-This guide shows how to connect the MCP23S17 to a Raspberry Pi 5 and wire BJT transistors to control matrix inputs.
+This guide shows how to connect the MCP23S17 to a Raspberry Pi 5 and wire BJT transistors in a **common-emitter matrix configuration** to simulate button presses.
+
+## BJT Matrix Configuration (Your Setup)
+
+Your hardware uses a **common-emitter BJT matrix** where:
+- **Emitters** of BJTs in the same row are tied together to form **ROW lines**
+- **Collectors** of BJTs in the same column are tied together to form **COLUMN lines**
+- When a BJT base is activated via the MCP23S17, it shorts its row to its column
+
+### 3×4 Matrix Example
+```
+              COL1   COL2   COL3   COL4
+               │      │      │      │
+ROW1 ──────┬───┤      │      │      │
+           │BJT1     BJT2    BJT3    BJT4
+           │ E │ C    │ C    │ C    │ C
+           └───┼──────┼──────┼──────┘
+                B      B      B      B
+
+ROW2 ──────┬───┤      │      │      │
+           │BJT5     BJT6    BJT7    BJT8
+           │ E │ C    │ C    │ C    │ C
+           └───┼──────┼──────┼──────┘
+                B      B      B      B
+
+ROW3 ──────┬───┤      │      │      │
+           │BJT9    BJT10   BJT11   BJT12
+           │ E │ C    │ C    │ C    │ C
+           └───┼──────┼──────┼──────┘
+                │      │      │      │
+              COL1   COL2   COL3   COL4
+
+Legend: E = Emitter (tied to ROW)
+        C = Collector (tied to COL)
+        B = Base (controlled by MCP23S17)
+```
+
+### Button Press Mechanism
+
+To press **Button 1 (ROW1 ∩ COL1)**:
+1. MCP23S17 GPB0 (Row 1) goes HIGH
+2. MCP23S17 GPA0 (Col 1) goes HIGH
+3. BJT1 base is activated through 10kΩ resistor
+4. BJT1 turns ON, connecting ROW1 emitter to COL1 collector
+5. This shorts the two lines together (simulates button press)
+
+### MCP23S17 Pin to BJT Base Mapping
+
+**Port B (Rows) - MCP23S17 Pins 1-8 → BJT Bases:**
+- GPB0 (Pin 1) ──[10kΩ]→ BJT1, BJT5, BJT9 bases (Row 1 control)
+- GPB1 (Pin 2) ──[10kΩ]→ BJT2, BJT6, BJT10 bases (Row 2 control)
+- GPB2 (Pin 3) ──[10kΩ]→ BJT3, BJT7, BJT11 bases (Row 3 control)
+- GPB3 (Pin 4) ──[10kΩ]→ BJT4, BJT8, BJT12 bases (Row 4 control)
+
+**Port A (Columns) - MCP23S17 Pins 21-28 → BJT Bases:**
+- GPA0 (Pin 21) ──[10kΩ]→ BJT1, BJT2, BJT3, BJT4 bases (Col 1 control)
+- GPA1 (Pin 22) ──[10kΩ]→ BJT5, BJT6, BJT7, BJT8 bases (Col 2 control)
+- GPA2 (Pin 23) ──[10kΩ]→ BJT9, BJT10, BJT11, BJT12 bases (Col 3 control)
+- GPA3 (Pin 24) ──[10kΩ]→ (additional BJT bases for Col 4)
 
 ## Raspberry Pi 5 SPI Pinout
 
