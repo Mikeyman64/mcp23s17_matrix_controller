@@ -127,11 +127,20 @@ class MCP23S17:
             register: Register to write to
             data: Data byte to write
         """
+        if self.spi is None:
+            return
+            
         command, address = self._build_command(opcode=0, address=register.value)
         
         try:
             self.spi.writebytes([command, address, data])
             logger.debug(f"Write register {register.name} = 0x{data:02X}")
+        except OSError as e:
+            if e.errno == 9:  # Bad file descriptor
+                logger.debug(f"SPI device closed, skipping write to {register.name}")
+            else:
+                logger.error(f"Failed to write register {register.name}: {e}")
+                raise
         except Exception as e:
             logger.error(f"Failed to write register {register.name}: {e}")
             raise
@@ -415,13 +424,26 @@ class MCP23S17:
     def cleanup(self) -> None:
         """Clean up and close SPI connection"""
         try:
+            if self.spi is None:
+                return
+                
             # Set all outputs to low before closing
-            self._write_register(MCP23S17Register.GPIOA, 0x00)
-            self._write_register(MCP23S17Register.GPIOB, 0x00)
-            self.spi.close()
+            try:
+                self._write_register(MCP23S17Register.GPIOA, 0x00)
+                self._write_register(MCP23S17Register.GPIOB, 0x00)
+            except (OSError, Exception) as e:
+                logger.debug(f"Could not reset pins before cleanup: {e}")
+            
+            # Close SPI connection
+            if self.spi:
+                try:
+                    self.spi.close()
+                except Exception as e:
+                    logger.debug(f"Error closing SPI: {e}")
+            
             logger.info("MCP23S17 cleaned up and SPI closed")
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+            logger.debug(f"Error during cleanup: {e}")
 
 
 class MatrixController:
