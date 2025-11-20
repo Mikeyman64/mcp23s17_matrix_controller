@@ -92,7 +92,6 @@ class MCP23S17:
             self.spi.open(bus, device)
             self.spi.max_speed_hz = speed_hz
             self.spi.mode = 0  # Mode 0: CPOL=0, CPHA=0
-            self.spi.lsb_first = False
             logger.info(f"SPI initialized on bus {bus}, device {device}, "
                        f"speed {speed_hz} Hz")
         except Exception as e:

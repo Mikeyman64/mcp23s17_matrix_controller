@@ -427,7 +427,7 @@ def test_number_input():
             logger.info("Pressing CALL button")
             keypad.press_button('CALL', duration=0.1)
             
-            print(f"✓ Sequence complete for number {number}")
+            print(f"[OK] Sequence complete for number {number}")
         
         keypad.cleanup()
         logger.info("Number input test ended")
