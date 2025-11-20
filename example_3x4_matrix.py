@@ -438,6 +438,42 @@ def test_number_input():
         traceback.print_exc()
 
 
+def test_hold_button():
+    """Test function: Hold button 1 for 10 seconds then release"""
+    logger.info("=" * 60)
+    logger.info("Hold Button Test - Button 1 for 10 seconds")
+    logger.info("=" * 60)
+    
+    try:
+        keypad = Keypad3x4()
+        
+        logger.info("Holding button 1 (row 0, col 0) for 10 seconds...")
+        print("Holding button 1 for 10 seconds...")
+        
+        # Set button 1 HIGH (press and hold)
+        keypad.controller.mcp.set_pin_high('A', 0)  # Row 0
+        keypad.controller.mcp.set_pin_high('B', 0)  # Col 0
+        
+        # Count down
+        for i in range(10, 0, -1):
+            print(f"  {i} seconds remaining...")
+            time.sleep(1)
+        
+        # Set button 1 LOW (release)
+        logger.info("Releasing button 1")
+        keypad.controller.mcp.set_pin_low('A', 0)  # Row 0
+        keypad.controller.mcp.set_pin_low('B', 0)  # Col 0
+        
+        print("[OK] Button 1 held for 10 seconds and released")
+        logger.info("Hold test completed")
+        keypad.cleanup()
+        
+    except Exception as e:
+        logger.error(f"Hold button test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main():
     """Run all examples"""
     import argparse
@@ -459,6 +495,7 @@ def main():
         8: example_8_custom_sequence,
         9: example_9_quick_test,
         10: test_number_input,
+        11: test_hold_button,
     }
     
     if args.example == 0:
@@ -477,13 +514,14 @@ def main():
         print("  8 - Complex multi-step sequence")
         print("  9 - QUICK TEST: Button 1 (0,0) + CALL")
         print(" 10 - TEST: Interactive number input (0-999) + CALL")
+        print(" 11 - TEST: Hold button 1 for 10 seconds")
         print("\nUsage: python example_3x4_matrix.py [example_number]")
         print("=" * 60 + "\n")
     elif args.example in examples:
         examples[args.example]()
     else:
         print(f"Invalid example number: {args.example}")
-        print("Valid examples: 1-10, or 0 for menu")
+        print("Valid examples: 1-11, or 0 for menu")
 
 
 if __name__ == "__main__":
