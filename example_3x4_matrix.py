@@ -26,7 +26,7 @@ import os
 # Add current directory to path to import mcp23s17_controller
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from mcp23s17_controller import MatrixController
+from mcp23s17_controller import MCP23S17, MatrixController
 
 # Configure logging
 logging.basicConfig(
@@ -39,40 +39,35 @@ logger = logging.getLogger(__name__)
 class Keypad3x4:
     """3x4 Keypad controller with button name mapping"""
     
-    # Button mapping: button_name -> (row, col)
+    # Direct GPIO pin mapping for your wiring
+    # Each button has its own dedicated BJT controlled by a single GPIO pin
+    # Format: button_name -> (port, pin)
     BUTTON_MAP = {
-        '1':    (0, 0),
-        '2':    (0, 1),
-        '3':    (0, 2),
-        'CALL': (0, 3),
-        '4':    (1, 0),
-        '5':    (1, 1),
-        '6':    (1, 2),
-        '0':    (1, 3),
-        '7':    (2, 0),
-        '8':    (2, 1),
-        '9':    (2, 2),
-        'CLR':  (2, 3),
+        # ROW1 buttons (controlled by Port A pins 0-3)
+        '1':    ('A', 0),    # GPA0 (MCP23S17 pin 21) -> BJT5 -> 1 button
+        '2':    ('A', 1),    # GPA1 (MCP23S17 pin 22) -> BJT6 -> 2 button
+        '3':    ('A', 2),    # GPA2 (MCP23S17 pin 23) -> BJT7 -> 3 button
+        'CALL': ('A', 3),    # GPA3 (MCP23S17 pin 24) -> BJT8 -> CALL button
+        
+        # ROW2 buttons (controlled by Port A pins 4-7)
+        '4':    ('A', 4),    # GPA4 (MCP23S17 pin 25) -> BJT9 -> 4 button
+        '5':    ('A', 5),    # GPA5 (MCP23S17 pin 26) -> BJT10 -> 5 button
+        '6':    ('A', 6),    # GPA6 (MCP23S17 pin 27) -> BJT11 -> 6 button
+        '0':    ('A', 7),    # GPA7 (MCP23S17 pin 28) -> BJT12 -> 0 button
+        
+        # ROW3 buttons (controlled by Port B pins 0-3)
+        '7':    ('B', 0),    # GPB0 (MCP23S17 pin 1) -> BJT1 -> 7 button
+        '8':    ('B', 1),    # GPB1 (MCP23S17 pin 2) -> BJT2 -> 8 button
+        '9':    ('B', 2),    # GPB2 (MCP23S17 pin 3) -> BJT3 -> 9 button
+        'CLR':  ('B', 3),    # GPB3 (MCP23S17 pin 4) -> BJT4 -> CLR button
     }
     
-    # Reverse mapping: (row, col) -> button_name
-    POSITION_MAP = {v: k for k, v in BUTTON_MAP.items()}
-    
-    def __init__(self, row_port: str = 'A', col_port: str = 'B'):
+    def __init__(self):
         """
         Initialize 3x4 keypad controller
-        
-        Args:
-            row_port: Port for row control (default 'A')
-            col_port: Port for column control (default 'B')
         """
-        self.controller = MatrixController(
-            num_rows=3,
-            num_cols=4,
-            row_port=row_port,
-            col_port=col_port
-        )
-        logger.info("3x4 Keypad initialized")
+        self.mcp = MCP23S17()
+        logger.info("3x4 Keypad initialized with direct GPIO mapping")
     
     def press_button(self, button_name: str, duration: float = 0.1) -> None:
         """
@@ -85,9 +80,9 @@ class Keypad3x4:
         if button_name not in self.BUTTON_MAP:
             raise ValueError(f"Invalid button: {button_name}")
         
-        row, col = self.BUTTON_MAP[button_name]
-        logger.info(f"Pressing button '{button_name}' at [{row}][{col}]")
-        self.controller.press_button(row, col, duration)
+        port, pin = self.BUTTON_MAP[button_name]
+        logger.info(f"Pressing button '{button_name}' ({port}{pin})")
+        self.mcp.pulse_pin(port, pin, duration)
     
     def press_sequence(self, button_sequence: str, 
                       duration: float = 0.1, interval: float = 0.2) -> None:
@@ -107,18 +102,18 @@ class Keypad3x4:
         
         logger.info(f"Pressing sequence: {' '.join(buttons)}")
         
-        coordinates = []
-        for button in buttons:
+        for i, button in enumerate(buttons):
             button = button.strip()
             if not button:
                 continue
             if button not in self.BUTTON_MAP:
                 logger.warning(f"Skipping invalid button: {button}")
                 continue
-            coordinates.append(self.BUTTON_MAP[button])
-        
-        if coordinates:
-            self.controller.press_sequence(coordinates, duration, interval)
+            
+            self.press_button(button, duration)
+            
+            if i < len(buttons) - 1:
+                time.sleep(interval)
     
     def get_button_layout(self) -> str:
         """Return ASCII representation of keypad layout"""
@@ -137,7 +132,7 @@ class Keypad3x4:
     
     def cleanup(self) -> None:
         """Cleanup resources"""
-        self.controller.cleanup()
+        self.mcp.cleanup()
         logger.info("Keypad cleanup complete")
 
 
