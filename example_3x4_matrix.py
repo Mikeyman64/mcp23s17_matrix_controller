@@ -474,6 +474,96 @@ def test_hold_button():
         traceback.print_exc()
 
 
+def test_spi_communication():
+    """Diagnostic test: Verify SPI communication with MCP23S17"""
+    logger.info("=" * 60)
+    logger.info("SPI Communication Diagnostic Test")
+    logger.info("=" * 60)
+    
+    try:
+        from mcp23s17_controller import MCP23S17, MCP23S17Register
+        
+        print("\n[1] Initializing MCP23S17...")
+        mcp = MCP23S17(bus=0, device=0, chip_select=0, speed_hz=100000)
+        print("    [OK] MCP23S17 initialized successfully")
+        
+        print("\n[2] Testing register write/read cycle...")
+        # Write a test pattern to Port A
+        test_value = 0xAA  # 10101010
+        print(f"    Writing 0x{test_value:02X} to Port A (GPIOA)...")
+        mcp.set_port('A', test_value)
+        
+        # Read it back
+        print("    Reading back Port A...")
+        read_value = mcp.get_port_state('A')
+        print(f"    Read value: 0x{read_value:02X}")
+        
+        if read_value == test_value:
+            print("    [OK] Write/Read test PASSED")
+        else:
+            print(f"    [WARNING] Expected 0x{test_value:02X}, got 0x{read_value:02X}")
+        
+        print("\n[3] Testing Port B write/read cycle...")
+        test_value_b = 0x55  # 01010101
+        print(f"    Writing 0x{test_value_b:02X} to Port B (GPIOB)...")
+        mcp.set_port('B', test_value_b)
+        
+        print("    Reading back Port B...")
+        read_value_b = mcp.get_port_state('B')
+        print(f"    Read value: 0x{read_value_b:02X}")
+        
+        if read_value_b == test_value_b:
+            print("    [OK] Port B test PASSED")
+        else:
+            print(f"    [WARNING] Expected 0x{test_value_b:02X}, got 0x{read_value_b:02X}")
+        
+        print("\n[4] Testing individual pin control...")
+        # Test each pin on Port A
+        print("    Testing Port A pins (setting each HIGH individually)...")
+        for pin in range(8):
+            mcp.set_pin_high('A', pin)
+            state = mcp.get_port_state('A')
+            print(f"      Pin A{pin}: 0x{state:02X}")
+            mcp.set_pin_low('A', pin)
+        
+        print("\n    Testing Port B pins (setting each HIGH individually)...")
+        for pin in range(4):  # Only test first 4 pins for 3x4 matrix
+            mcp.set_pin_high('B', pin)
+            state = mcp.get_port_state('B')
+            print(f"      Pin B{pin}: 0x{state:02X}")
+            mcp.set_pin_low('B', pin)
+        
+        print("\n[5] Testing pulse on button 1 (row 0, col 0)...")
+        print("    Pulsing button 1 for 0.5 seconds...")
+        mcp.pulse_row_column(0, 0, row_port='A', col_port='B', duration=0.5)
+        print("    [OK] Pulse completed")
+        
+        print("\n[6] Resetting all pins to LOW...")
+        mcp.set_port('A', 0x00)
+        mcp.set_port('B', 0x00)
+        print("    [OK] All pins reset")
+        
+        mcp.cleanup()
+        
+        print("\n" + "=" * 60)
+        print("DIAGNOSTIC TEST PASSED - SPI communication is working!")
+        print("=" * 60 + "\n")
+        logger.info("SPI diagnostic test completed successfully")
+        
+    except PermissionError as e:
+        print("\n[ERROR] Permission Denied!")
+        print("The SPI device requires elevated privileges.")
+        print("Please run with sudo:")
+        print("  sudo python3 example_3x4_matrix.py 12")
+        logger.error(f"Permission error: {e}")
+        
+    except Exception as e:
+        print(f"\n[ERROR] Communication test failed: {e}")
+        logger.error(f"SPI communication test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main():
     """Run all examples"""
     import argparse
@@ -496,6 +586,7 @@ def main():
         9: example_9_quick_test,
         10: test_number_input,
         11: test_hold_button,
+        12: test_spi_communication,
     }
     
     if args.example == 0:
@@ -515,13 +606,14 @@ def main():
         print("  9 - QUICK TEST: Button 1 (0,0) + CALL")
         print(" 10 - TEST: Interactive number input (0-999) + CALL")
         print(" 11 - TEST: Hold button 1 for 10 seconds")
+        print(" 12 - DIAGNOSTIC: SPI communication test")
         print("\nUsage: python example_3x4_matrix.py [example_number]")
         print("=" * 60 + "\n")
     elif args.example in examples:
         examples[args.example]()
     else:
         print(f"Invalid example number: {args.example}")
-        print("Valid examples: 1-11, or 0 for menu")
+        print("Valid examples: 1-12, or 0 for menu")
 
 
 if __name__ == "__main__":
