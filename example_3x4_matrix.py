@@ -21,9 +21,10 @@ import sys
 import time
 import logging
 from typing import Dict, List, Tuple
+import os
 
-# Add parent directory to path to import mcp23s17_controller
-sys.path.insert(0, '/home/pi/mcp23s17_matrix_controller')
+# Add current directory to path to import mcp23s17_controller
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from mcp23s17_controller import MatrixController
 
