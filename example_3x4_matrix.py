@@ -360,6 +360,29 @@ def example_8_custom_sequence():
         logger.error(f"Example 8 failed: {e}")
 
 
+def example_9_quick_test():
+    """Example 9: Quick test - Press button 1 (0,0), then CALL"""
+    logger.info("=" * 60)
+    logger.info("Example 9: Quick Test - Button 1 + CALL")
+    logger.info("=" * 60)
+    
+    try:
+        keypad = Keypad3x4()
+        
+        logger.info("Pressing button 1 (row 0, col 0)")
+        keypad.press_button('1', duration=0.1)
+        time.sleep(0.3)
+        
+        logger.info("Pressing CALL button")
+        keypad.press_button('CALL', duration=0.1)
+        
+        logger.info("Quick test completed")
+        keypad.cleanup()
+        
+    except Exception as e:
+        logger.error(f"Example 9 failed: {e}")
+
+
 def test_number_input():
     """Test function: Input a number and send button strokes"""
     logger.info("=" * 60)
@@ -433,7 +456,8 @@ def main():
         6: example_6_numeric_entry,
         7: example_7_menu_navigation,
         8: example_8_custom_sequence,
-        9: test_number_input,
+        9: example_9_quick_test,
+        10: test_number_input,
     }
     
     if args.example == 0:
@@ -450,14 +474,15 @@ def main():
         print("  6 - Enter all digits (0-9)")
         print("  7 - Menu navigation")
         print("  8 - Complex multi-step sequence")
-        print("  9 - TEST: Interactive number input (0-999) + CALL")
+        print("  9 - QUICK TEST: Button 1 (0,0) + CALL")
+        print(" 10 - TEST: Interactive number input (0-999) + CALL")
         print("\nUsage: python example_3x4_matrix.py [example_number]")
         print("=" * 60 + "\n")
     elif args.example in examples:
         examples[args.example]()
     else:
         print(f"Invalid example number: {args.example}")
-        print("Valid examples: 1-9, or 0 for menu")
+        print("Valid examples: 1-10, or 0 for menu")
 
 
 if __name__ == "__main__":
